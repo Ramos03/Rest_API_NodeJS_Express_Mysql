@@ -4,6 +4,7 @@ class Tabelas{
         this.conexao = conexao;
 
         this.criarAtendimentos();
+        this.criarPets();
     }
  
     criarAtendimentos(){
@@ -27,7 +28,25 @@ class Tabelas{
                 console.log('Tabela atendimentos criado com sucesso');
             }
         })
-    } 
+    }
+    
+    criarPets(){
+        let sql = 'CREATE TABLE IF NOT EXISTS pets( ';
+        sql = sql + ' id int not null auto_increment, ';
+        sql = sql + ' nome varchar(50), ';
+        sql = sql + ' imagem varchar(200), ';
+        sql = sql + ' primary key(id)';
+        sql = sql + ' )';
+
+        this.conexao.query(sql, (erro) => {
+            if(erro){
+                console.log(erro);
+            }
+            else{
+                console.log('Tabela pets criado com sucesso');
+            }
+        });
+    }
 }
 
 module.exports = new Tabelas;
