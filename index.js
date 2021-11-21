@@ -1,5 +1,5 @@
 const customExpress = require('./config/customExpress');
-const conexao = require('./config/conexao');
+const conexao = require('./config/database/conexao');
 const tabelas = require('./config/tabelas');
 /**
  * Função de inicialização do nosso servidor

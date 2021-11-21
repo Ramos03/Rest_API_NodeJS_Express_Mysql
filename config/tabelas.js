@@ -10,7 +10,7 @@ class Tabelas{
     criarAtendimentos(){
         let sql = 'CREATE TABLE IF NOT EXISTS atendimentos (      ';
         sql = sql + ' id int not null auto_increment,';
-        sql = sql + ' cliente varchar(50) not null,';
+        sql = sql + ' cliente varchar(11) not null,';
         sql = sql + ' pet varchar(20),';
         sql = sql + ' servico varchar(20) not null,';
         sql = sql + ' data datetime not null,';

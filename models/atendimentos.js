@@ -1,8 +1,36 @@
-const conexao = require('../config/conexao');
+const conexao = require('../config/database/conexao');
 const moment = require('moment');
+const axios = require('axios');
+const repositorio = require('../repositorios/atendimento');
+class Atendimentos {
 
-class Atendimentos{
+    constructor() {
+        this.dataEhValida = ({ data, dataCriacao }) =>
+            moment(data).isSameOrAfter(dataCriacao);
 
+        this.clienteEhValido = ({ tamanho }) => tamanho >= 5;
+
+        this.valida = parametros =>
+            this.validacoes.filter(campo => {
+                const { nome } = campo;
+                const parametro = parametros[nome];
+
+                return !campo.valido(parametro)
+            });
+
+        this.validacoes = [
+            {
+                nome: 'data',
+                valido: this.dataEhValida,
+                mensagem: 'Data deve ser maior ou igual a data atual'
+            },
+            {
+                nome: 'cliente',
+                valido: this.clienteEhValido,
+                mensagem: 'Cliente deve ter pelo menos cinco caracteres'
+            }
+        ];
+    }
     /**
      * Função para adicionar um atendimento
      * @param array atendimento 
@@ -11,44 +39,32 @@ class Atendimentos{
     adicionaAtendimnento(atendimento, res) {
 
         let dataCriacao = moment().format('YYYY-MM-DD HH:MM:SS');
-        
+
         const data = moment(atendimento.data).format('YYYY-MM-DD HH:MM:SS');
-        const dataEHValida = moment(data).isSameOrAfter(dataCriacao);
-        const clienteEHValido = atendimento.cliente.length >= 5;
 
-        const validações = [
-            {
-                nome: 'data',
-                valido: dataEHValida,
-                mensagem: 'Data deve ser menor ou igual a data atual'
-            },
-            {
-                nome: 'cliente',
-                valido: clienteEHValido,
-                mensagem: 'Cliente deve ter pelo menos 5 caracteres'
-            }
-        ];
+        const parametros = {
+            data: { data, dataCriacao },
+            cliente: { tamanho: atendimento.cliente.length }
+        }
 
-        const erros = validações.filter(campo => !campo.valido);
+        const erros = this.valida(parametros);
 
         const existemErros = erros.length;
 
-        if(existemErros){
-            res.status(400).json(erros);
-        }
-        else{
-            const atendimentoDatado = {...atendimento, 'data_criacao': dataCriacao, 'data': data};
-    
-            let sql = 'INSERT INTO atendimentos SET ?';
-    
-            conexao.query(sql, atendimentoDatado, (erro, resultados) => {
-                if(erro){
-                    res.status(400).json(erro);
-                }
-                else{
-                    res.status(201).json(atendimentoDatado);
-                }
+        if (existemErros) {
+            return new Promise((resolve, reject) => {
+                reject(erros);
             });
+        }
+        else {
+            const atendimentoDatado = { ...atendimento, 'data_criacao': dataCriacao, 'data': data };
+
+            return repositorio.adiciona(atendimentoDatado)
+                .then((resultados) => {
+                    const id = resultados.insertId;
+
+                    return { ...atendimentoDatado, id }
+                });
         }
     }
 
@@ -58,18 +74,8 @@ class Atendimentos{
      * 
      * @return object resultados 
      */
-    listaAtendimentos(res){
-        const sql = 'SELECT * FROM atendimentos';
-
-        conexao.query(sql, (erro, resultados) => {
-            if(erro){
-                res.status(400).json(erro);
-            }
-            else{
-                res.status(200).json(resultados);
-            }
-        });
-        
+    listaAtendimentos() {
+        return repositorio.lista();
     }
 
     /**
@@ -79,19 +85,19 @@ class Atendimentos{
      * 
      * @return array atendimento
      */
-    listaAtendimentoId(res, id){
-        const sql = `SELECT * FROM atendimentos WHERE id = ${id}`;
+    listaAtendimentoId(id) {
 
-        conexao.query(sql, (erro, resultados) => {
-            if(erro){
-                res.status(400).json(erro);
-            }
-            else{
+        return repositorio.listaById(id)
+            .then(async (resultados) => {
                 const atendimento = resultados[0];
+                const cpf = atendimento.cliente;
 
-                res.status(200).json(atendimento);
-            }
-        });
+                const { data } = await axios.get(`http://localhost:8082/${cpf}`);
+
+                atendimento.cliente = data;
+
+                return atendimento;
+            });
     }
 
     /**
@@ -102,18 +108,13 @@ class Atendimentos{
      * 
      * @return json valores, id
      */
-    alteraAtendimento(res, id, valores){
+    alteraAtendimento(id, valores) {
 
-        const sql = `UPDATE atendimentos SET ? WHERE id = ?`;
+        return repositorio.altera(id, valores)
+            .then(async(resultados) =>{
 
-        conexao.query(sql, [valores, id], (erro) => {
-            if(erro){
-                res.status(400).json(erro);
-            }
-            else{
-                res.status(200).json({...valores, id});
-            }
-        });
+                return { ...valores, id };
+            });
     }
 
     /**
@@ -123,17 +124,11 @@ class Atendimentos{
      * 
      * @return json id
      */
-    deletaAtendimento(res, id){
-        const sql = `DELETE FROM atendimentos WHERE id = ?`;
-
-        conexao.query(sql, id, (erro) => {
-            if(erro){
-                res.status(400).json(erro);
-            }
-            else{
-                res.status(200).json({id});
-            }
-        });
+    deletaAtendimento(id) {
+        return repositorio.deleta(id)
+            .then(async(resultados) => {
+                return { id };
+            });
     }
 }
 

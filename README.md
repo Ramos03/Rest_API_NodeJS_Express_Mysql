@@ -13,7 +13,7 @@ Antes de começar, é preciso ter instalado em sua máquina as seguintes ferrame
 
 Além disto é bom ter um editor para trabalhar com o código como [VSCode](https://code.visualstudio.com/)
 
-### Exemplo de consumo da API
+### Exemplo de consumo da Endpoint Atendimentos
 ```bash
 {
 	"cliente": "",
@@ -22,6 +22,14 @@ Além disto é bom ter um editor para trabalhar com o código como [VSCode](http
 	"data": "",
 	"status": "",
 	"obervacoes": ""
+}
+```
+
+### Exemplo de consumo da Endpoint Pets
+```bash
+{
+	"nome": "",
+	"imagem": ""
 }
 ```
 ### 🎲 Rodando a aplicação
